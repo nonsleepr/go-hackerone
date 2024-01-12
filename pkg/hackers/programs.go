@@ -21,6 +21,11 @@ type getProgramWeaknessesResponse struct {
 	Links api.Links      `json:"links"`
 }
 
+type getProgramScopesResponse struct {
+	Data  []api.StructuredScope `json:"data"`
+	Links api.Links             `json:"links"`
+}
+
 // GetPrograms returns a list of programs received by the hacker. If there are further pages, nextPage will be >0.
 func (a *API) GetPrograms(ctx context.Context, pageOptions *api.PageOptions) (programs []api.Program, nextPage int, err error) {
 	var response getProgramsResponse
@@ -53,6 +58,23 @@ func (a *API) GetProgramWeaknesses(ctx context.Context, handle string, pageOptio
 	var response getProgramWeaknessesResponse
 	path := fmt.Sprintf(
 		"/hackers/programs/%s/weaknesses?page[number]=%d&page[size]=%d",
+		handle,
+		pageOptions.GetPageNumber(),
+		pageOptions.GetPageSize(),
+	)
+	if err := a.client.Get(ctx, path, &response); err != nil {
+		return nil, 0, err
+	}
+	if response.Links.Next != "" {
+		nextPage = pageOptions.GetPageNumber() + 1
+	}
+	return response.Data, nextPage, nil
+}
+
+func (a *API) GetProgramScopes(ctx context.Context, handle string, pageOptions *api.PageOptions) (programs []api.StructuredScope, nextPage int, err error) {
+	var response getProgramScopesResponse
+	path := fmt.Sprintf(
+		"/hackers/programs/%s/structured_scopes?page[number]=%d&page[size]=%d",
 		handle,
 		pageOptions.GetPageNumber(),
 		pageOptions.GetPageSize(),
